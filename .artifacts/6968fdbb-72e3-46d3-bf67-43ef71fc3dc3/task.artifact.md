@@ -1,0 +1,31 @@
+# Task Checklist - AI Interview Coach Backend Implementation
+
+- `[ ]` **Backend Project Initialization**
+    - `[ ]` Create directory structure
+    - `[ ]` Create `requirements.txt`
+    - `[ ]` Create `.env.example` and `.gitignore`
+- `[ ]` **Database & Models**
+    - `[ ]` Configure SQLAlchemy connection
+    - `[ ]` Implement all models (`User`, `Resume`, `Interview`, etc.)
+    - `[ ]` Initialize Alembic and create initial migration
+- `[ ]` **Core Services**
+    - `[ ]` `AuthService` (JWT, Hashing)
+    - `[ ]` `ResumeService` (Parser, Validator)
+    - `[ ]` `AIService` (Gemini/OpenAI abstraction)
+    - `[ ]` `InterviewService` (Question generator, Evaluator)
+    - `[ ]` `SpeechService` (STT abstraction)
+- `[ ]` **API Implementation**
+    - `[ ]` Auth routes (`/login`, `/register`)
+    - `[ ]` User routes (`/me`)
+    - `[ ]` Resume routes (`/upload`, `/analysis`)
+    - `[ ]` Interview routes (`/start`, `/answers`, `/result`)
+    - `[ ]` Progress & History routes
+- `[ ]` **Frontend Integration**
+    - `[ ]` Update `authService.ts`
+    - `[ ]` Update `resumeService.ts`
+    - `[ ]` Update `interviewService.ts`
+    - `[ ]` Update `progressService.ts`
+- `[ ]` **Finalization**
+    - `[ ]` Add `README.md`
+    - `[ ]` Health check endpoint
+    - `[ ]` Final verification tests

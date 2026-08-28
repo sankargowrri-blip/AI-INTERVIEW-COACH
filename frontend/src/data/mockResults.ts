@@ -1,0 +1,178 @@
+import type { InterviewResult } from '../types';
+
+export const mockResult: InterviewResult = {
+  id: 'result-latest',
+  interviewId: 'hist-5',
+  totalScore: 84,
+  classification: 'MARVELOUS',
+  scoreBreakdown: {
+    answerQuality: 88,
+    communication: 82,
+    performance: 85,
+    roleKnowledge: 90,
+  },
+  communicationAnalysis: {
+    clarity: 88,
+    fluency: 81,
+    grammar: 91,
+    vocabulary: 79,
+    speakingPace: 74,
+    fillerWords: 72,
+  },
+  performanceAnalysis: {
+    professionalism: 87,
+    answerStructure: 83,
+    relevance: 90,
+    engagement: 82,
+    confidence: 78,
+  },
+  strengths: [
+    'You explained your project clearly and kept your answers relevant.',
+    'Your role knowledge was strong — you showed good understanding of data analysis concepts.',
+    'Grammar and sentence construction were consistently clear.',
+    'Your answers demonstrated genuine enthusiasm for the role.',
+  ],
+  improvements: [
+    'Some answers could include more specific, quantified examples.',
+    'Speaking pace was slightly fast in a few answers — try to slow down for clarity.',
+    'Reducing filler words like "um" and "like" will improve your professional impression.',
+    'Answer structure could be more consistent — try the STAR method.',
+  ],
+  improvementAreas: [
+    {
+      topic: 'Speaking Pace',
+      problem: 'Your speaking pace was occasionally too fast, which can make it harder for interviewers to follow.',
+      whyItMatters: 'A measured pace signals confidence and gives the interviewer time to process your responses.',
+      howToImprove: 'Practice recording yourself answering questions. Listen back and consciously slow down by 10–15% at key points.',
+    },
+    {
+      topic: 'Filler Words',
+      problem: 'Filler words such as "um", "like", and "you know" appeared frequently.',
+      whyItMatters: 'Excessive filler words can undermine your perceived confidence and professionalism.',
+      howToImprove: 'Pause silently instead of filling gaps. Practice with a partner and signal each time you use a filler word.',
+    },
+    {
+      topic: 'Project Explanation',
+      problem: 'Your project explanations were good overall but lacked specific impact metrics.',
+      whyItMatters: 'Quantified outcomes (e.g., "reduced processing time by 30%") are far more compelling.',
+      howToImprove: 'Revisit each project and identify at least one measurable result you can mention.',
+    },
+    {
+      topic: 'Answer Structure',
+      problem: 'Some behavioral answers were slightly unstructured, making the point less clear.',
+      whyItMatters: 'Structured answers (Situation → Task → Action → Result) are easier to follow and more persuasive.',
+      howToImprove: 'Practice 5 behavioral questions daily using the STAR format until it becomes natural.',
+    },
+    {
+      topic: 'Vocabulary',
+      problem: 'Vocabulary was adequate but not always domain-specific.',
+      whyItMatters: 'Using the right technical vocabulary signals expertise and cultural fit.',
+      howToImprove: 'Read industry-relevant articles and note new terms. Try to incorporate 2–3 new terms per practice session.',
+    },
+  ],
+  keyPoints: [
+    'Give structured answers using the Situation → Task → Action → Result format.',
+    'Reduce filler words by pausing silently instead of saying "um" or "like".',
+    'Use real, specific examples from your experience in every behavioral question.',
+    'Clearly explain your personal contribution in each project description.',
+    'Avoid one-sentence answers — aim for 60–120 seconds per response.',
+    'Improve your answer conclusions — end with a clear takeaway or outcome.',
+    'Maintain a steady, moderate speaking pace throughout the interview.',
+  ],
+  practicePlan: [
+    {
+      day: 1,
+      title: 'Self Introduction',
+      tasks: [
+        'Record a 90-second introduction',
+        'Review and remove filler words',
+        'Practice three versions of your introduction',
+      ],
+    },
+    {
+      day: 2,
+      title: 'Project Explanation',
+      tasks: [
+        'Prepare a 2-minute explanation for each project on your resume',
+        'Add at least one measurable result per project',
+        'Practice explaining to a non-technical listener',
+      ],
+    },
+    {
+      day: 3,
+      title: 'HR Questions',
+      tasks: [
+        'Practice: Why should we hire you?',
+        'Practice: What are your strengths and weaknesses?',
+        'Practice: Where do you see yourself in 5 years?',
+      ],
+    },
+    {
+      day: 4,
+      title: 'Role-Specific Questions',
+      tasks: [
+        'Review 10 common Data Analyst interview questions',
+        'Answer 5 questions using the STAR format',
+        'Focus on data cleaning, SQL, and visualization topics',
+      ],
+    },
+    {
+      day: 5,
+      title: 'Full Mock Interview',
+      tasks: [
+        'Complete a full 20-question mixed mock interview',
+        'Record your session',
+        'Self-review for filler words and answer structure',
+      ],
+    },
+  ],
+  createdAt: '2026-08-20T10:00:00Z',
+};
+
+export const mockResultHistory: Record<string, InterviewResult> = {
+  'hist-1': {
+    ...mockResult,
+    id: 'result-hist-1',
+    interviewId: 'hist-1',
+    totalScore: 62,
+    classification: 'NOT BAD',
+    scoreBreakdown: { answerQuality: 60, communication: 58, performance: 65, roleKnowledge: 62 },
+    communicationAnalysis: { clarity: 65, fluency: 58, grammar: 72, vocabulary: 60, speakingPace: 55, fillerWords: 50 },
+    performanceAnalysis: { professionalism: 65, answerStructure: 55, relevance: 68, engagement: 60, confidence: 58 },
+    createdAt: '2026-08-10T15:00:00Z',
+  },
+  'hist-2': {
+    ...mockResult,
+    id: 'result-hist-2',
+    interviewId: 'hist-2',
+    totalScore: 68,
+    classification: 'NOT BAD',
+    scoreBreakdown: { answerQuality: 70, communication: 65, performance: 68, roleKnowledge: 70 },
+    communicationAnalysis: { clarity: 70, fluency: 64, grammar: 78, vocabulary: 65, speakingPace: 60, fillerWords: 58 },
+    performanceAnalysis: { professionalism: 70, answerStructure: 62, relevance: 72, engagement: 65, confidence: 63 },
+    createdAt: '2026-08-12T10:45:00Z',
+  },
+  'hist-3': {
+    ...mockResult,
+    id: 'result-hist-3',
+    interviewId: 'hist-3',
+    totalScore: 74,
+    classification: 'GOOD',
+    scoreBreakdown: { answerQuality: 76, communication: 72, performance: 74, roleKnowledge: 78 },
+    communicationAnalysis: { clarity: 76, fluency: 70, grammar: 82, vocabulary: 72, speakingPace: 67, fillerWords: 65 },
+    performanceAnalysis: { professionalism: 76, answerStructure: 70, relevance: 79, engagement: 72, confidence: 70 },
+    createdAt: '2026-08-14T16:45:00Z',
+  },
+  'hist-4': {
+    ...mockResult,
+    id: 'result-hist-4',
+    interviewId: 'hist-4',
+    totalScore: 79,
+    classification: 'GOOD',
+    scoreBreakdown: { answerQuality: 82, communication: 78, performance: 80, roleKnowledge: 84 },
+    communicationAnalysis: { clarity: 82, fluency: 76, grammar: 86, vocabulary: 75, speakingPace: 71, fillerWords: 69 },
+    performanceAnalysis: { professionalism: 82, answerStructure: 77, relevance: 85, engagement: 78, confidence: 75 },
+    createdAt: '2026-08-17T11:45:00Z',
+  },
+  'hist-5': mockResult,
+};
