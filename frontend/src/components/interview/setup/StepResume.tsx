@@ -28,7 +28,7 @@ export default function StepResume() {
     const result = await resumeService.processResume(f);
     if (result.valid) {
       setStatus('valid');
-      setResume({ fileName: f.name, fileSize: f.size, status: 'valid', extractedInfo: result.extractedInfo });
+      setResume({ id: result.id, fileName: f.name, fileSize: f.size, status: 'valid', extractedInfo: result.extractedInfo });
     } else {
       setStatus('invalid');
       setResume({ fileName: f.name, fileSize: f.size, status: 'invalid' });

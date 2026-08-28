@@ -44,6 +44,7 @@ export type InterviewType =
 export type ResumeStatus = 'idle' | 'selecting' | 'processing' | 'valid' | 'invalid' | 'error';
 
 export interface ResumeData {
+  id?: string;
   fileName: string;
   fileSize: number;
   status: ResumeStatus;

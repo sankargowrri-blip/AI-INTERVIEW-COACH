@@ -20,7 +20,7 @@ export default function HistoryDetailPage() {
   useEffect(() => {
     const item = mockInterviewHistory.find(h => h.id === id);
     setHistoryItem(item || null);
-    interviewService.getHistoryItemResult(id || '').then(r => {
+    interviewService.getHistoryItemResult(id || '').then((r: InterviewResult) => {
       setResult(r);
       setLoading(false);
     });

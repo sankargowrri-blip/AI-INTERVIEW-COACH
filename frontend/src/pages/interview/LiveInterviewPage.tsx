@@ -112,7 +112,8 @@ export default function LiveInterviewPage() {
       await new Promise(r => setTimeout(r, 800));
       setLoadingMsg('Loading questions...');
       try {
-        const questions = await interviewService.getQuestions(config);
+        const { id } = await interviewService.createInterview(config);
+        const questions = await interviewService.getQuestions(id);
         startSession(questions);
       } catch {
         setInterviewStatus('error');

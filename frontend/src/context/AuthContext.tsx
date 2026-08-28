@@ -9,7 +9,7 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateUser: (updates: Partial<User>) => void;
+  updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  const updateUser = useCallback((updates: Partial<User>) => {
-    const updated = authService.updateUser(updates);
+  const updateUser = useCallback(async (updates: Partial<User>) => {
+    const updated = await authService.updateUser(updates);
     if (updated) setUser(updated);
   }, []);
 

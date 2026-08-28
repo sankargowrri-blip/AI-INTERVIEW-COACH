@@ -15,9 +15,15 @@ export const interviewService = {
       const response = await axios.post(
         `${API_URL}/interviews/`,
         {
-          resume_id: config.resume?.status === 'valid' ? config.resume.status : null, // Assuming backend expects resume_id
+          resume_id: config.resume?.id ? parseInt(config.resume.id) : null,
           title: `${config.role} - ${config.interviewType}`,
           job_description: config.customRole || config.role,
+          role: config.role,
+          experience_level: config.experienceLevel?.toUpperCase(),
+          difficulty: config.difficulty?.toUpperCase(),
+          interview_type: config.interviewType,
+          company: config.companyTarget,
+          question_count: config.numberOfQuestions,
         },
         { headers: getHeaders() }
       );
@@ -26,6 +32,10 @@ export const interviewService = {
       console.error('Failed to create interview:', error);
       throw error;
     }
+  },
+
+  async getHistoryItemResult(interviewId: string): Promise<InterviewResult> {
+    return this.getResult(interviewId);
   },
 
   async getQuestions(interviewId: string): Promise<Question[]> {
