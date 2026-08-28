@@ -7,8 +7,10 @@ class UserBase(BaseModel):
     full_name: Optional[str] = None
     is_active: Optional[bool] = True
 
+from pydantic import BaseModel, EmailStr, Field
+
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(..., min_length=6, max_length=72)
 
 class UserUpdate(UserBase):
     password: Optional[str] = None

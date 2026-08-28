@@ -20,6 +20,11 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
                 status_code=400,
                 detail="User with this email already exists",
             )
+        if len(user_in.password) > 72:
+             raise HTTPException(
+                status_code=400,
+                detail="Password too long (max 72 characters)",
+            )
         hashed_password = get_password_hash(user_in.password)
         db_user = User(
             email=user_in.email,
