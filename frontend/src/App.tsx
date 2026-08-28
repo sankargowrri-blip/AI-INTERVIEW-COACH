@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { InterviewProvider } from './context/InterviewContext';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import GuestRoute from './components/auth/GuestRoute';
@@ -9,23 +9,23 @@ import PublicLayout from './components/layout/PublicLayout';
 import AppLayout from './components/layout/AppLayout';
 import LoadingState from './components/common/LoadingState';
 
-// Pages — lazy loaded
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const ProgressPage = lazy(() => import('./pages/ProgressPage'));
-const PracticePage = lazy(() => import('./pages/PracticePage'));
-const ResumePage = lazy(() => import('./pages/ResumePage'));
-const CompanyPreparationPage = lazy(() => import('./pages/CompanyPreparationPage'));
-const InterviewSetupPage = lazy(() => import('./pages/interview/InterviewSetupPage'));
-const CameraCheckPage = lazy(() => import('./pages/interview/CameraCheckPage'));
-const LiveInterviewPage = lazy(() => import('./pages/interview/LiveInterviewPage'));
-const CompletionPage = lazy(() => import('./pages/interview/CompletionPage'));
-const ResultPage = lazy(() => import('./pages/interview/ResultPage'));
-const HistoryPage = lazy(() => import('./pages/interview/HistoryPage'));
-const HistoryDetailPage = lazy(() => import('./pages/interview/HistoryDetailPage'));
+// Pages — direct imports to avoid lazy loading issues during debugging
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/ProfilePage';
+import ProgressPage from './pages/ProgressPage';
+import PracticePage from './pages/PracticePage';
+import ResumePage from './pages/ResumePage';
+import CompanyPreparationPage from './pages/CompanyPreparationPage';
+import InterviewSetupPage from './pages/interview/InterviewSetupPage';
+import CameraCheckPage from './pages/interview/CameraCheckPage';
+import LiveInterviewPage from './pages/interview/LiveInterviewPage';
+import CompletionPage from './pages/interview/CompletionPage';
+import ResultPage from './pages/interview/ResultPage';
+import HistoryPage from './pages/interview/HistoryPage';
+import HistoryDetailPage from './pages/interview/HistoryDetailPage';
 
 function PageLoader() {
   return <LoadingState fullPage message="" />;
@@ -36,8 +36,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <InterviewProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+          <Routes>
               {/* Public routes */}
               <Route element={<PublicLayout />}>
                 <Route
@@ -116,8 +115,7 @@ export default function App() {
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          </Routes>
         </InterviewProvider>
       </AuthProvider>
     </BrowserRouter>
