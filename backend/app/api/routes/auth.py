@@ -11,7 +11,7 @@ from app.schemas.user import UserCreate, User as UserSchema
 
 router = APIRouter()
 
-@router.post("/register", response_model=UserSchema)
+@router.post("/register")
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == user_in.email).first()
     if user:
@@ -28,7 +28,18 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
+    
+    # Create access token immediately
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        subject=db_user.email, expires_delta=access_token_expires
+    )
+    
+    return {
+        "user": db_user,
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 @router.post("/login", response_model=Token)
 def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):

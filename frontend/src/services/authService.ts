@@ -52,14 +52,23 @@ export const authService = {
         full_name: data.name,
       });
 
-      const user = response.data;
-      // After registration, we usually login automatically or redirect to login.
-      // Here we'll just return success and the user.
+      const { user, access_token } = response.data;
+
+      if (access_token) {
+        localStorage.setItem(TOKEN_KEY, access_token);
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      }
+
       return { success: true, user };
     } catch (error: any) {
+      console.error('Registration Error:', error);
+      const detail = error.response?.data?.detail;
+      const message = typeof detail === 'string' ? detail :
+                      (Array.isArray(detail) ? detail[0]?.msg : null);
+
       return {
         success: false,
-        error: error.response?.data?.detail || 'Registration failed.',
+        error: message || 'Registration failed. Please check your internet connection and try again.',
       };
     }
   },
