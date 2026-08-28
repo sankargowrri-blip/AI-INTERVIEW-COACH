@@ -1,7 +1,10 @@
 import axios from 'axios';
 import type { User, LoginCredentials, RegisterData } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Ensure no trailing slash
+const API_URL = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+
 const AUTH_STORAGE_KEY = 'aic_auth_user';
 const TOKEN_KEY = 'aic_auth_token';
 
@@ -14,6 +17,7 @@ export interface AuthResponse {
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log('Attempting login to:', `${API_URL}/auth/login`);
       const params = new URLSearchParams();
       params.append('username', credentials.email);
       params.append('password', credentials.password);
@@ -37,6 +41,7 @@ export const authService = {
 
       return { success: true, user };
     } catch (error: any) {
+      console.error('Login Error Full Details:', error);
       return {
         success: false,
         error: error.response?.data?.detail || 'Invalid email or password.',
@@ -46,6 +51,7 @@ export const authService = {
 
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
+      console.log('Attempting registration to:', `${API_URL}/auth/register`);
       const response = await axios.post(`${API_URL}/auth/register`, {
         email: data.email,
         password: data.password,
@@ -61,10 +67,17 @@ export const authService = {
 
       return { success: true, user };
     } catch (error: any) {
-      console.error('Registration Error:', error);
+      console.error('Registration Error Full Details:', error);
       const detail = error.response?.data?.detail;
-      const message = typeof detail === 'string' ? detail :
-                      (Array.isArray(detail) ? detail[0]?.msg : null);
+      let message = 'Registration failed.';
+
+      if (typeof detail === 'string') {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message = detail[0]?.msg || message;
+      } else if (error.message === 'Network Error') {
+        message = 'Network error. The server might be down or blocking the request (CORS).';
+      }
 
       return {
         success: false,
