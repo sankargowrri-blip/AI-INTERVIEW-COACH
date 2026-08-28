@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
     
+    FRONTEND_URL: str = "*"
+    
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

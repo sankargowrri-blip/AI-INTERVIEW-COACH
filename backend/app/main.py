@@ -15,11 +15,15 @@ app = FastAPI(
 # Set all CORS enabled origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this in production
-    allow_credentials=True,
+    allow_origins=[settings.FRONTEND_URL] if settings.FRONTEND_URL != "*" else ["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
