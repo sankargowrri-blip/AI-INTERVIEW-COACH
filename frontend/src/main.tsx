@@ -3,24 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-console.log('App is starting...');
+const container = document.getElementById('root');
 
-try {
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    throw new Error('Failed to find root element');
-  }
-
-  createRoot(rootElement).render(
+if (container) {
+  const root = createRoot(container);
+  root.render(
     <StrictMode>
       <App />
-    </StrictMode>,
-  )
-  console.log('App rendered successfully');
-} catch (error) {
-  console.error('Crash during initial render:', error);
-  const root = document.getElementById('root');
-  if (root) {
-    root.innerHTML = `<div style="padding: 20px; color: red;"><h1>App Crash</h1><pre>${error}</pre></div>`;
-  }
+    </StrictMode>
+  );
 }
