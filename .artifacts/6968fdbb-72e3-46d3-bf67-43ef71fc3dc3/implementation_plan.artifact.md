@@ -1,66 +1,33 @@
-# Implementation Plan - AI Interview Coach Backend + Database
+# Debugging Plan - AI Interview Coach Registration
 
-This plan outlines the steps to implement the complete backend and database for the AI Interview Coach application, integrating it with the existing React frontend.
+The user is facing a "Registration failed" error on the deployed application. I have identified a critical JSON serialization error in the backend and will also improve the connection robustness.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> The implementation involves setting up a Python FastAPI backend and a PostgreSQL database. Please ensure you have Python 3.9+ and PostgreSQL installed locally for development.
-
-> [!WARNING]
-> I will be replacing the mock services in the frontend with real API calls. This will break the application until the backend is running.
+> I am fixing a backend crash (500 error) caused by trying to return a database object directly in the registration response. This will require a redeploy on Render.
 
 ## Proposed Changes
 
-### Backend Setup
+### Backend (Fixing the 500 Error)
 
-#### [NEW] [backend structure](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/)
-Create the directory structure as specified in the prompt, including `app/`, `core/`, `database/`, `models/`, `schemas/`, `api/`, `services/`, `utils/`, `migrations/`, `tests/`, and `uploads/`.
+#### [MODIFY] [auth.py](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/app/api/routes/auth.py)
+- Update the `/register` endpoint to return a JSON-compatible dictionary. I will use the `User` schema to serialize the user object.
+- Add logging to catch and print database errors.
 
-#### [NEW] [requirements.txt](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/requirements.txt)
-Define dependencies: `fastapi`, `uvicorn`, `sqlalchemy`, `alembic`, `psycopg2-binary`, `python-multipart`, `python-jose[cryptography]`, `passlib[bcrypt]`, `pydantic-settings`, `pymupdf`, `python-docx`, `openai`, `google-generativeai`, `httpx`, `pytest`.
+#### [MODIFY] [main.py](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/app/main.py)
+- Update the `/health` endpoint to verify the database connection.
 
-#### [NEW] [.env.example](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/.env.example)
-Provide template for environment variables.
+### Frontend (Improving Error Visibility)
 
-### Database & Models
-
-#### [NEW] [models](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/app/models/)
-Implement SQLAlchemy models: `User`, `UserProfile`, `Resume`, `Interview`, `Question`, `Answer`, `Evaluation`, `Progress`, `Practice`.
-
-#### [NEW] [migrations](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/migrations/)
-Initialize Alembic and create initial migration script.
-
-### Services Layer
-
-#### [NEW] [services](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/app/services/)
-- `auth_service.py`: Password hashing and JWT generation.
-- `resume_parser.py`: PDF/DOCX text extraction using PyMuPDF and python-docx.
-- `ai_service.py`: Wrapper for Gemini/OpenAI/Groq.
-- `interview_service.py`: Logic for interview flow and state management.
-- `speech_service.py`: Speech-to-text integration.
-
-### API Routes
-
-#### [NEW] [routes](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/backend/app/api/routes/)
-Implement RESTful endpoints for Auth, Users, Resumes, Interviews, Progress, and Practice.
-
-### Frontend Integration
-
-#### [MODIFY] [frontend services](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/frontend/src/services/)
-Update `authService.ts`, `resumeService.ts`, `interviewService.ts`, and `progressService.ts` to use `axios` for backend communication.
-
-#### [NEW] [.env](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/frontend/.env)
-Add `VITE_API_URL=http://localhost:8000`.
+#### [MODIFY] [authService.ts](file:///C:/Users/sanka/OneDrive/Documents/Ai%20interview%20coach/frontend/src/services/authService.ts)
+- Improve error parsing to correctly display "Internal Server Error" or "Database Error" if the backend fails.
+- Ensure the `API_URL` is perfectly formatted.
 
 ## Verification Plan
 
-### Automated Tests
-- Run `pytest` in the `backend/` directory to verify API endpoints and services.
-- Verify database migrations run successfully with `alembic upgrade head`.
-
 ### Manual Verification
-- Register a new user and login.
-- Upload a valid resume and verify parsing.
-- Start an interview, provide voice answers (simulated if necessary), and check evaluation.
-- View progress charts and interview history.
+1. Push changes to GitHub.
+2. Verify Backend: Visit `https://ai-interview-coach-jzjh.onrender.com/health`. It should return `{"status": "ok", "database": "connected"}`.
+3. Verify Frontend: Attempt registration on the Vercel link.
+4. If it fails, check the browser console (F12) for the new detailed logs.

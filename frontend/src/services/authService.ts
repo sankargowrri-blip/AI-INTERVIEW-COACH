@@ -68,20 +68,32 @@ export const authService = {
       return { success: true, user };
     } catch (error: any) {
       console.error('Registration Error Full Details:', error);
-      const detail = error.response?.data?.detail;
+
       let message = 'Registration failed.';
 
-      if (typeof detail === 'string') {
-        message = detail;
-      } else if (Array.isArray(detail)) {
-        message = detail[0]?.msg || message;
-      } else if (error.message === 'Network Error') {
-        message = 'Network error. The server might be down or blocking the request (CORS).';
+      if (error.response) {
+        // The server responded with a status code outside the 2xx range
+        const detail = error.response.data?.detail;
+        if (typeof detail === 'string') {
+          message = detail;
+        } else if (Array.isArray(detail)) {
+          message = detail[0]?.msg || message;
+        } else if (error.response.status === 500) {
+          message = 'Server Error (500). Please check backend logs.';
+        } else {
+          message = `Error ${error.response.status}: ${message}`;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        message = 'Unable to connect to the server. Please check your internet or backend status.';
+      } else {
+        // Something happened in setting up the request
+        message = error.message;
       }
 
       return {
         success: false,
-        error: message || 'Registration failed. Please check your internet connection and try again.',
+        error: message,
       };
     }
   },

@@ -33,6 +33,17 @@ app.include_router(progress.router, prefix="/api/progress", tags=["progress"])
 app.include_router(companies.router, prefix="/api/companies", tags=["companies"])
 app.include_router(practice.router, prefix="/api/practice", tags=["practice"])
 
+from sqlalchemy import text
+from app.database.session import SessionLocal
+
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    health = {"status": "ok", "database": "disconnected"}
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        health["database"] = "connected"
+        db.close()
+    except Exception as e:
+        health["database"] = f"error: {str(e)}"
+    return health
