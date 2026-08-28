@@ -5,7 +5,6 @@ from app.core.config import settings
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.PROJECT_NAME}/openapi.json"
 )
 
 # Set all CORS enabled origins
