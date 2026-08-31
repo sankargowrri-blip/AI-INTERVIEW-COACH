@@ -33,7 +33,10 @@ class ResumeService:
         
         Return as JSON.
         """
-        extracted_data_raw = await ai_service.generate_response(extraction_prompt, "You are a resume parser.")
+        extracted_data_raw = await ai_service._call_llm(
+            extraction_prompt,
+            "You are a resume parser. Return only valid JSON."
+        )
         
         # In a real app, parse extracted_data_raw as JSON
         # For now, return mock structured data

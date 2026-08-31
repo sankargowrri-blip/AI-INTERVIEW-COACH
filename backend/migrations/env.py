@@ -28,8 +28,19 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Set the database URL from environment variable
+# Falls back to alembic.ini value only if DATABASE_URL is not set (local dev)
 database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    # Try loading from Settings as a last resort
+    try:
+        from app.core.config import settings
+        database_url = settings.DATABASE_URL
+    except Exception:
+        pass
 if database_url:
+    # Render/Neon may provide postgres:// — SQLAlchemy 1.4+ requires postgresql://
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
     config.set_main_option("sqlalchemy.url", database_url)
 
 # add your model's MetaData object here
