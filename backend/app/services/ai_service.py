@@ -18,8 +18,8 @@ class AIService:
     
     def __init__(self):
         self.provider = settings.AI_PROVIDER.lower()
-        self.openai_key = settings.OPENAI_API_KEY
-        self.gemini_key = settings.GOOGLE_API_KEY
+        self.openai_key = settings.OPENAI_API_KEY or settings.AI_API_KEY
+        self.gemini_key = settings.GOOGLE_API_KEY or settings.AI_API_KEY
         
         self.client = None
         if self.provider == "openai" and self.openai_key and AsyncOpenAI:

@@ -58,9 +58,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" role="region" aria-label="Your statistics">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8" role="region" aria-label="Your statistics">
         <StatCard
-          label="Latest Score"
+          label="Previous Score"
           value={`${mockProgressStats.currentScore}/100`}
           icon={BarChart2}
           color="bg-primary-50 text-primary-600"
@@ -80,9 +80,15 @@ export default function DashboardPage() {
         <StatCard
           label="Interviews"
           value={String(mockProgressStats.totalInterviews)}
-          sub={`+${mockProgressStats.improvementPercentage}% improvement`}
           icon={Clock}
           color="bg-purple-50 text-purple-600"
+        />
+        <StatCard
+          label="Improvement"
+          value={`${mockProgressStats.improvementPercentage}%`}
+          sub="Overall progress"
+          icon={TrendingUp}
+          color="bg-blue-50 text-blue-600"
         />
       </div>
 

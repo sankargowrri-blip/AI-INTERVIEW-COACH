@@ -8,6 +8,18 @@ const API_URL = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
 const AUTH_STORAGE_KEY = 'aic_auth_user';
 const TOKEN_KEY = 'aic_auth_token';
 
+// Helper to map backend user to frontend user
+const mapUser = (data: any): User => {
+  return {
+    id: data.id.toString(),
+    name: data.full_name || data.name || 'User',
+    email: data.email,
+    experienceLevel: data.experience_level,
+    preferredRole: data.target_role || data.preferredRole,
+    createdAt: data.created_at || new Date().toISOString(),
+  };
+};
+
 export interface AuthResponse {
   success: boolean;
   user?: User;
@@ -36,7 +48,7 @@ export const authService = {
         headers: { Authorization: `Bearer ${access_token}` },
       });
 
-      const user = userResponse.data;
+      const user = mapUser(userResponse.data);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
 
       return { success: true, user };
@@ -58,7 +70,8 @@ export const authService = {
         full_name: data.name,
       });
 
-      const { user, access_token } = response.data;
+      const { user: rawUser, access_token } = response.data;
+      const user = mapUser(rawUser);
 
       if (access_token) {
         localStorage.setItem(TOKEN_KEY, access_token);
@@ -126,7 +139,7 @@ export const authService = {
       const response = await axios.patch(`${API_URL}/users/me`, updates, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const updated = response.data;
+      const updated = mapUser(response.data);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
       return updated;
     } catch {

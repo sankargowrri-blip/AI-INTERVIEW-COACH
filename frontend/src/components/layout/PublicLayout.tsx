@@ -20,9 +20,9 @@ export default function PublicLayout() {
                     <path d="M9 9h.01M15 9h.01" />
                   </svg>
                 </div>
-                <span className="font-bold text-white text-sm">AI Interview Coach</span>
+                <span className="font-bold text-white text-lg tracking-tight">AI Interview Coach</span>
               </div>
-              <p className="text-sm text-surface-500">Practice. Improve. Get Hired.</p>
+              <p className="text-sm text-surface-400">Practice. Improve. Get Hired.</p>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white mb-3">Product</h3>

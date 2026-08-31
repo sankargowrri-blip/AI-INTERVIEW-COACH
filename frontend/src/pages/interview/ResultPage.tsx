@@ -95,6 +95,17 @@ export default function ResultPage() {
           )}>
             {result.classification}
           </div>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className="text-sm text-surface-500">Interview Readiness:</span>
+            <span className={clsx(
+              'px-3 py-1 rounded-lg text-sm font-bold',
+              result.readinessPrediction === 'High' ? 'bg-emerald-100 text-emerald-700' :
+              result.readinessPrediction === 'Medium' ? 'bg-blue-100 text-blue-700' :
+              'bg-amber-100 text-amber-700'
+            )}>
+              {result.readinessPrediction}
+            </span>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">

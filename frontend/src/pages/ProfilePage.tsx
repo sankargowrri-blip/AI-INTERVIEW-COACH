@@ -54,11 +54,11 @@ export default function ProfilePage() {
         <div className="flex items-start gap-5 mb-6">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-primary-100 flex items-center justify-center shrink-0">
             <span className="text-2xl sm:text-3xl font-bold text-primary-700">
-              {user.name.charAt(0).toUpperCase()}
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </span>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-surface-900">{user.name}</h2>
+            <h2 className="text-xl font-bold text-surface-900">{user.name || 'User'}</h2>
             <p className="text-surface-500 text-sm">{user.email}</p>
             <div className="flex flex-wrap gap-2 mt-2">
               {user.experienceLevel && (

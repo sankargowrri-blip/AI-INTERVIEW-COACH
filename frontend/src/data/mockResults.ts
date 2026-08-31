@@ -5,6 +5,7 @@ export const mockResult: InterviewResult = {
   interviewId: 'hist-5',
   totalScore: 84,
   classification: 'MARVELOUS',
+  readinessPrediction: 'High',
   scoreBreakdown: {
     answerQuality: 88,
     communication: 82,

@@ -4,6 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  full_name?: string;
   experienceLevel?: ExperienceLevel;
   preferredRole?: string;
   createdAt: string;
@@ -195,6 +196,7 @@ export interface InterviewResult {
   interviewId: string;
   totalScore: number;
   classification: ResultClassification;
+  readinessPrediction: 'High' | 'Medium' | 'Needs Improvement';
   scoreBreakdown: ScoreBreakdown;
   communicationAnalysis: CommunicationAnalysis;
   performanceAnalysis: PerformanceAnalysis;

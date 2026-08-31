@@ -38,7 +38,7 @@ export default function Navbar() {
             <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
               <Bot className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
-            <span className="font-bold text-surface-900 text-sm sm:text-base">
+            <span className="font-bold text-surface-900 text-sm sm:text-base tracking-tight">
               AI Interview Coach
             </span>
           </Link>
@@ -101,11 +101,11 @@ export default function Navbar() {
                   >
                     <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
                       <span className="text-primary-700 font-semibold text-sm">
-                        {user?.name.charAt(0).toUpperCase()}
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
                     <span className="hidden sm:block text-sm font-medium text-surface-700 max-w-[120px] truncate">
-                      {user?.name}
+                      {user?.name || 'User'}
                     </span>
                     <ChevronDown className={clsx('w-4 h-4 text-surface-400 transition-transform hidden sm:block', profileOpen && 'rotate-180')} aria-hidden="true" />
                   </button>

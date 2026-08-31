@@ -73,7 +73,7 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
-              label="Full name"
+              label="Full Name"
               type="text"
               placeholder="Alex Johnson"
               value={form.name}
@@ -83,7 +83,7 @@ export default function RegisterPage() {
               autoComplete="name"
             />
             <Input
-              label="Email address"
+              label="Email"
               type="email"
               placeholder="you@example.com"
               value={form.email}
@@ -113,7 +113,7 @@ export default function RegisterPage() {
               }
             />
             <Input
-              label="Confirm password"
+              label="Confirm Password"
               type={showConfirm ? 'text' : 'password'}
               placeholder="Repeat your password"
               value={form.confirmPassword}

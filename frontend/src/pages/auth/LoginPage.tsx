@@ -72,7 +72,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <Input
-              label="Email address"
+              label="Email"
               type="email"
               placeholder="you@example.com"
               value={form.email}
@@ -108,7 +108,7 @@ export default function LoginPage() {
               size="lg"
               isLoading={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Login'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
         </div>
