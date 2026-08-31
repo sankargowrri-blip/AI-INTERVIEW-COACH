@@ -380,6 +380,41 @@ const roleSpecificQuestions: Record<string, Question[]> = {
       difficulty: 'medium',
       followUps: ['Which stage do you find most challenging?'],
     },
+    {
+      id: 'sales-3',
+      text: 'How do you maintain a relationship with a client after the sale is closed?',
+      category: 'role-specific',
+      difficulty: 'easy',
+    },
+  ],
+
+  operations: [
+    {
+      id: 'ops-1',
+      text: 'How do you approach supply chain optimization for a growing company?',
+      category: 'role-specific',
+      difficulty: 'hard',
+    },
+    {
+      id: 'ops-2',
+      text: 'Describe a time you identified a process bottleneck. How did you resolve it?',
+      category: 'role-specific',
+      difficulty: 'medium',
+    },
+  ],
+  banking: [
+    {
+      id: 'bank-1',
+      text: 'How do you assess the creditworthiness of a small business loan applicant?',
+      category: 'role-specific',
+      difficulty: 'medium',
+    },
+    {
+      id: 'bank-2',
+      text: 'What are the key differences between retail banking and investment banking?',
+      category: 'role-specific',
+      difficulty: 'easy',
+    },
   ],
   default: [
     {
@@ -427,7 +462,11 @@ function getRoleSpecificQuestions(role: string): Question[] {
     return roleSpecificQuestions.hr;
   }
   if (roleLower.includes('marketing')) return roleSpecificQuestions.marketing;
-  if (roleLower.includes('sales')) return roleSpecificQuestions.sales;
+  if (roleLower.includes('sales') || roleLower.includes('business development') || roleLower.includes('customer relationship')) {
+    return roleSpecificQuestions.sales;
+  }
+  if (roleLower.includes('banking')) return roleSpecificQuestions.banking;
+  if (roleLower.includes('operation')) return roleSpecificQuestions.operations;
   if (roleLower.includes('business') || roleLower.includes('mba') || roleLower.includes('bba')) {
     return roleSpecificQuestions.business;
   }

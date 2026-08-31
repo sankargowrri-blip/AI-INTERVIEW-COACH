@@ -1,14 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { InterviewProvider } from './context/InterviewContext';
-import { Suspense } from 'react';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import GuestRoute from './components/auth/GuestRoute';
 import PublicLayout from './components/layout/PublicLayout';
 import AppLayout from './components/layout/AppLayout';
-import LoadingState from './components/common/LoadingState';
-
 // Pages — direct imports to avoid lazy loading issues during debugging
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
@@ -27,9 +24,6 @@ import ResultPage from './pages/interview/ResultPage';
 import HistoryPage from './pages/interview/HistoryPage';
 import HistoryDetailPage from './pages/interview/HistoryDetailPage';
 
-function PageLoader() {
-  return <LoadingState fullPage message="" />;
-}
 
 export default function App() {
   return (

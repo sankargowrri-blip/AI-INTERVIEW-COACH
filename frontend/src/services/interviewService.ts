@@ -93,6 +93,7 @@ export const interviewService = {
         interviewId: data.interview_id.toString(),
         totalScore: data.overall_score,
         classification: this.classifyScore(data.overall_score) as any,
+        readinessPrediction: data.overall_score >= 70 ? 'High' : data.overall_score >= 50 ? 'Medium' : 'Needs Improvement',
         scoreBreakdown: {
           answerQuality: data.overall_score,
           communication: data.overall_score,
@@ -183,10 +184,13 @@ export const interviewService = {
   },
 
   formatDifficulty(difficulty: string): string {
+    if (!difficulty) return 'Not set';
     return difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
   },
 
   formatExperienceLevel(level: string): string {
-    return level === 'fresher' ? 'Fresher' : 'Experienced';
+    if (!level) return 'Not set';
+    const lowLevel = level.toLowerCase();
+    return lowLevel === 'fresher' ? 'Fresher' : 'Experienced';
   },
 };

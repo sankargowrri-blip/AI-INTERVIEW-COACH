@@ -14,7 +14,7 @@ class InterviewBase(BaseModel):
     duration: Optional[int] = None
 
 class InterviewCreate(InterviewBase):
-    resume_id: int
+    resume_id: Optional[int] = None
 
 class InterviewUpdate(InterviewBase):
     status: Optional[str] = None
@@ -22,7 +22,7 @@ class InterviewUpdate(InterviewBase):
 class Interview(InterviewBase):
     id: int
     user_id: int
-    resume_id: int
+    resume_id: Optional[int] = None
     status: str
     overall_score: Optional[float] = None
     result_label: Optional[str] = None
