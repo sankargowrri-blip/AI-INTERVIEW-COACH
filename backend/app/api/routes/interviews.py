@@ -7,6 +7,7 @@ from app.models.interview import Interview
 from app.models.interview_result import InterviewResult
 from app.models.question import Question
 from app.models.answer import Answer
+from app.models.evaluation import Evaluation
 from app.schemas.interview import Interview as InterviewSchema, InterviewCreate, InterviewResult as InterviewResultSchema
 from app.schemas.answer import AnswerCreate, Answer as AnswerSchema, AnswerResponse
 from app.schemas.question import Question as QuestionSchema
@@ -155,3 +156,59 @@ def get_interview_result(
         raise HTTPException(status_code=404, detail="Result not found. Finish the interview first.")
 
     return result
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_interview(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Permanently delete a specific interview and all its associated data.
+
+    Security: the interview must belong to the authenticated user.
+    Returns 403 if the interview exists but belongs to another user.
+    Returns 404 if the interview does not exist at all.
+    """
+    # Fetch the interview first — do NOT filter by user_id yet so we can
+    # return the correct 403 vs 404 distinction.
+    interview = db.query(Interview).filter(Interview.id == id).first()
+
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found.")
+
+    # Ownership check — CRITICAL: prevents cross-user deletion
+    if interview.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete this interview.",
+        )
+
+    # Cascade-delete associated records in the correct dependency order:
+    # Evaluations → Answers → InterviewResult → Questions → Interview
+
+    # 1. Delete evaluations (depend on answers)
+    for question in interview.questions:
+        if question.answer:
+            db.query(Evaluation).filter(
+                Evaluation.answer_id == question.answer.id
+            ).delete(synchronize_session=False)
+            db.delete(question.answer)
+
+    # 2. Delete interview result (depends on interview)
+    db.query(InterviewResult).filter(
+        InterviewResult.interview_id == id
+    ).delete(synchronize_session=False)
+
+    # 3. Delete questions (depend on interview)
+    db.query(Question).filter(
+        Question.interview_id == id
+    ).delete(synchronize_session=False)
+
+    # 4. Delete the interview itself
+    db.delete(interview)
+    db.commit()
+
+    # 204 No Content — no body needed
+    return

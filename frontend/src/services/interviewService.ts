@@ -5,6 +5,9 @@ import { getMockQuestions } from '../data/mockQuestions';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+/** localStorage key for persisting history when backend is offline */
+const HISTORY_STORAGE_KEY = 'aic_interview_history';
+
 const getHeaders = () => {
   const token = authService.getToken();
   return { Authorization: `Bearer ${token}` };
@@ -135,21 +138,58 @@ export const interviewService = {
       const response = await axios.get(`${API_URL}/interviews/history`, {
         headers: getHeaders(),
       });
-      return response.data.map((item: any) => ({
+      const items: InterviewHistoryItem[] = response.data.map((item: any) => ({
         id: item.id.toString(),
-        role: item.title,
-        experienceLevel: 'experienced',
-        difficulty: 'medium',
-        interviewType: 'general',
-        date: item.created_at,
-        score: 0,
-        classification: 'GOOD',
-        duration: 0,
+        role: item.title || item.role || 'Interview',
+        experienceLevel: (item.experience_level?.toLowerCase() || 'experienced') as any,
+        difficulty: (item.difficulty?.toLowerCase() || 'medium') as any,
+        interviewType: (item.interview_type || 'general') as any,
+        date: item.created_at || new Date().toISOString(),
+        score: item.overall_score ?? 0,
+        classification: (item.result_label || this.classifyScore(item.overall_score ?? 0)) as any,
+        duration: item.duration ?? 0,
       }));
+      // Persist to localStorage so delete-by-id works offline too
+      try { localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+      return items;
     } catch (error) {
-      console.error('Failed to get history:', error);
-      return [];
+      console.warn('Failed to get history from backend — using localStorage:', error);
+      try {
+        const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+        return raw ? (JSON.parse(raw) as InterviewHistoryItem[]) : [];
+      } catch { return []; }
     }
+  },
+
+  /**
+   * Delete a single interview by id.
+   * Calls DELETE /api/interviews/{id} on the backend.
+   * Also removes the entry from localStorage so the page stays consistent
+   * when the backend is offline or the user refreshes.
+   *
+   * Returns { success: true } or throws with a user-facing message.
+   */
+  async deleteInterview(interviewId: string): Promise<void> {
+    // If this is a local-only mock id (no backend record), just remove from localStorage
+    const isMock = interviewId.startsWith('mock-') || interviewId.startsWith('hist-');
+
+    if (!isMock) {
+      // Real backend deletion
+      await axios.delete(`${API_URL}/interviews/${interviewId}`, {
+        headers: getHeaders(),
+      });
+      // axios throws on 4xx/5xx — caller handles the error
+    }
+
+    // Remove from localStorage regardless
+    try {
+      const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+      if (raw) {
+        const current: InterviewHistoryItem[] = JSON.parse(raw);
+        const updated = current.filter(h => h.id !== interviewId);
+        localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch { /* ignore storage errors */ }
   },
 
   getClassificationColor(classification: string): string {
