@@ -6,7 +6,9 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import GuestRoute from './components/auth/GuestRoute';
 import PublicLayout from './components/layout/PublicLayout';
 import AppLayout from './components/layout/AppLayout';
-// Pages — direct imports to avoid lazy loading issues during debugging
+import ErrorBoundary from './components/common/ErrorBoundary';
+
+// Pages
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -24,91 +26,88 @@ import ResultPage from './pages/interview/ResultPage';
 import HistoryPage from './pages/interview/HistoryPage';
 import HistoryDetailPage from './pages/interview/HistoryDetailPage';
 
-
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <InterviewProvider>
           <Routes>
-              {/* Public routes */}
-              <Route element={<PublicLayout />}>
-                <Route
-                  path="/"
-                  element={
-                    <GuestRoute>
-                      <LandingPage />
-                    </GuestRoute>
-                  }
-                />
-              </Route>
-
-              {/* Auth routes — redirect if logged in */}
+            {/* Public routes */}
+            <Route element={<PublicLayout />}>
               <Route
-                path="/login"
+                path="/"
                 element={
                   <GuestRoute>
-                    <LoginPage />
+                    <LandingPage />
                   </GuestRoute>
                 }
               />
-              <Route
-                path="/register"
-                element={
-                  <GuestRoute>
-                    <RegisterPage />
-                  </GuestRoute>
-                }
-              />
+            </Route>
 
-              {/* Protected app routes */}
-              <Route
-                element={
-                  <ProtectedRoute>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/progress" element={<ProgressPage />} />
-                <Route path="/practice" element={<PracticePage />} />
-                <Route path="/resume" element={<ResumePage />} />
-                <Route path="/company-preparation" element={<CompanyPreparationPage />} />
-                <Route path="/interview/history" element={<HistoryPage />} />
-                <Route path="/interview/history/:id" element={<HistoryDetailPage />} />
-                <Route path="/interview/setup" element={<InterviewSetupPage />} />
-                <Route path="/interview/result" element={<ResultPage />} />
-              </Route>
+            {/* Auth routes */}
+            <Route
+              path="/login"
+              element={<GuestRoute><LoginPage /></GuestRoute>}
+            />
+            <Route
+              path="/register"
+              element={<GuestRoute><RegisterPage /></GuestRoute>}
+            />
 
-              {/* Full-screen interview routes (no app nav) */}
-              <Route
-                path="/interview/setup/camera-check"
-                element={
-                  <ProtectedRoute>
+            {/* Protected app routes (with sidebar/nav) */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard"            element={<DashboardPage />} />
+              <Route path="/profile"              element={<ProfilePage />} />
+              <Route path="/progress"             element={<ProgressPage />} />
+              <Route path="/practice"             element={<PracticePage />} />
+              <Route path="/resume"               element={<ResumePage />} />
+              <Route path="/company-preparation"  element={<CompanyPreparationPage />} />
+              <Route path="/interview/history"    element={<HistoryPage />} />
+              <Route path="/interview/history/:id" element={<HistoryDetailPage />} />
+              <Route path="/interview/setup"      element={<InterviewSetupPage />} />
+              <Route path="/interview/result"     element={<ResultPage />} />
+            </Route>
+
+            {/* Full-screen interview routes (no app nav) — wrapped in ErrorBoundary */}
+            <Route
+              path="/interview/setup/camera-check"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary context="Camera Check">
                     <CameraCheckPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/interview/live"
-                element={
-                  <ProtectedRoute>
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/interview/live"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary context="Live Interview">
                     <LiveInterviewPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/interview/completion"
-                element={
-                  <ProtectedRoute>
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/interview/completion"
+              element={
+                <ProtectedRoute>
+                  <ErrorBoundary context="Interview Completion">
                     <CompletionPage />
-                  </ProtectedRoute>
-                }
-              />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </InterviewProvider>
       </AuthProvider>

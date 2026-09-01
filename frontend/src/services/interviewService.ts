@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { InterviewConfig, InterviewResult, InterviewHistoryItem, Question } from '../types';
 import { authService } from './authService';
+import { getMockQuestions } from '../data/mockQuestions';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -29,8 +30,9 @@ export const interviewService = {
       );
       return { id: response.data.id.toString() };
     } catch (error) {
-      console.error('Failed to create interview:', error);
-      throw error;
+      console.warn('Backend unavailable — using mock interview id:', error);
+      // Return a mock id so the flow continues with local mock questions
+      return { id: 'mock-' + Date.now() };
     }
   },
 
@@ -38,17 +40,26 @@ export const interviewService = {
     return this.getResult(interviewId);
   },
 
-  async getQuestions(interviewId: string): Promise<Question[]> {
+  async getQuestions(interviewId: string, config?: InterviewConfig): Promise<Question[]> {
+    // If this is a mock id (backend unavailable) skip the network call entirely
+    if (interviewId.startsWith('mock-')) {
+      return getMockQuestions(config);
+    }
     try {
       const response = await axios.post(
         `${API_URL}/interviews/${interviewId}/start`,
         {},
         { headers: getHeaders() }
       );
-      return response.data;
+      const questions: Question[] = response.data;
+      // If backend returned empty or invalid, fall back to mock
+      if (!Array.isArray(questions) || questions.length === 0) {
+        return getMockQuestions(config);
+      }
+      return questions;
     } catch (error) {
-      console.error('Failed to get questions:', error);
-      throw error;
+      console.warn('Failed to get questions from backend — using mock questions:', error);
+      return getMockQuestions(config);
     }
   },
 

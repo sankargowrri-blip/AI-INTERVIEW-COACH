@@ -527,3 +527,25 @@ export {
   situationalQuestions,
   roleSpecificQuestions,
 };
+
+/**
+ * getMockQuestions — safe fallback used when the backend is unavailable.
+ * Accepts an optional InterviewConfig (or undefined) and always returns
+ * a non-empty question array.
+ */
+export function getMockQuestions(config?: { role?: string; difficulty?: string | null; experienceLevel?: string | null; interviewType?: string | null; numberOfQuestions?: number } | null): Question[] {
+  const role           = config?.role           || 'Software Engineer';
+  const difficulty     = (config?.difficulty    || 'medium')  as Difficulty;
+  const experienceLevel= (config?.experienceLevel || 'experienced') as ExperienceLevel;
+  const interviewType  = (config?.interviewType  || 'general') as InterviewType;
+  const count          = config?.numberOfQuestions || 10;
+
+  try {
+    const questions = buildQuestionSet(experienceLevel, role, difficulty, interviewType, count);
+    // Always return at least the baseline intro questions so the page never crashes
+    if (questions.length === 0) return introQuestions.slice(0, count);
+    return questions;
+  } catch {
+    return introQuestions.slice(0, count);
+  }
+}
