@@ -11,7 +11,9 @@ import type {
   AnswerRecord,
   AnswerStatus,
   InterviewStatus,
+  InterviewResult,
 } from '../types';
+import { buildResultFromSession } from '../utils/buildResult';
 
 const DEFAULT_CONFIG: InterviewConfig = {
   experienceLevel: null,
@@ -27,6 +29,7 @@ interface InterviewContextValue {
   config: InterviewConfig;
   currentStep: InterviewSetupStep;
   session: InterviewSession | null;
+  result: InterviewResult | null;
 
   // Setup actions
   setExperienceLevel: (level: ExperienceLevel) => void;
@@ -56,6 +59,7 @@ export function InterviewProvider({ children }: { children: React.ReactNode }) {
   const [config, setConfig] = useState<InterviewConfig>(DEFAULT_CONFIG);
   const [currentStep, setCurrentStep] = useState<InterviewSetupStep>('experience');
   const [session, setSession] = useState<InterviewSession | null>(null);
+  const [result, setResult] = useState<InterviewResult | null>(null);
 
   const setExperienceLevel = useCallback((level: ExperienceLevel) => {
     setConfig(c => ({ ...c, experienceLevel: level }));
@@ -93,6 +97,7 @@ export function InterviewProvider({ children }: { children: React.ReactNode }) {
     setConfig(DEFAULT_CONFIG);
     setCurrentStep('experience');
     setSession(null);
+    setResult(null);
   }, []);
 
   const startSession = useCallback((questions: Question[]) => {
@@ -114,7 +119,17 @@ export function InterviewProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setInterviewStatus = useCallback((status: InterviewStatus) => {
-    setSession(s => s ? { ...s, status } : s);
+    setSession(s => {
+      if (!s) return s;
+      const updated = { ...s, status };
+      // When the interview is marked completed, build the result immediately
+      // so ResultPage can read it from context without any API call.
+      if (status === 'completed') {
+        const built = buildResultFromSession(updated, updated.id);
+        setResult(built);
+      }
+      return updated;
+    });
   }, []);
 
   const nextQuestion = useCallback(() => {
@@ -145,6 +160,7 @@ export function InterviewProvider({ children }: { children: React.ReactNode }) {
       config,
       currentStep,
       session,
+      result,
       setExperienceLevel,
       setResume,
       setRole,
