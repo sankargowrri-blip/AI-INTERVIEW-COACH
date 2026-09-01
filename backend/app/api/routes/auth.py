@@ -1,3 +1,5 @@
+import time
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -9,22 +11,32 @@ from app.models.user import User
 from app.schemas.auth import Token
 from app.schemas.user import UserCreate, User as UserSchema
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _user_to_dict(user: User) -> dict:
+    """Serialise a User ORM object to a plain dict safe for JSON."""
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name or "",
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }
+
 
 @router.post("/register")
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
+    t0 = time.monotonic()
     try:
-        user = db.query(User).filter(User.email == user_in.email).first()
-        if user:
-            raise HTTPException(
-                status_code=400,
-                detail="User with this email already exists",
-            )
+        existing = db.query(User).filter(User.email == user_in.email).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+
         if len(user_in.password) > 72:
-             raise HTTPException(
-                status_code=400,
-                detail="Password too long (max 72 characters)",
-            )
+            raise HTTPException(status_code=400, detail="Password too long (max 72 characters)")
+
         hashed_password = get_password_hash(user_in.password)
         db_user = User(
             email=user_in.email,
@@ -34,47 +46,72 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        
-        # Create access token immediately
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
         access_token = create_access_token(
-            subject=db_user.email, expires_delta=access_token_expires
-        )
-        
-        # Convert SQLAlchemy object to dict for JSON serialization
-        user_data = {
-            "id": db_user.id,
-            "email": db_user.email,
-            "full_name": db_user.full_name,
-            "is_active": db_user.is_active,
-            "created_at": db_user.created_at.isoformat() if db_user.created_at else None
-        }
-        
-        return {
-            "user": user_data,
-            "access_token": access_token,
-            "token_type": "bearer"
-        }
-    except Exception as e:
-        print(f"Registration Error: {str(e)}")
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal Server Error: {str(e)}"
+            subject=db_user.email,
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
 
-@router.post("/login", response_model=Token)
-def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
+        logger.info("[AUTH] register completed in %.0f ms", (time.monotonic() - t0) * 1000)
+        return {
+            "user": _user_to_dict(db_user),
+            "access_token": access_token,
+            "token_type": "bearer",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("[AUTH] register error: %s", e)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
+
+
+@router.post("/login")
+def login(
+    db: Session = Depends(get_db),
+    form_data: OAuth2PasswordRequestForm = Depends(),
+):
+    """
+    Authenticate the user and return BOTH the access token AND the user
+    profile in a single response.
+
+    This eliminates the need for a second GET /users/me round trip on the
+    frontend, cutting login latency by ~50 % on remote backends.
+    """
+    t0 = time.monotonic()
+
+    # ── 1. Database lookup ─────────────────────────────────────────────────
     user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    logger.info("[AUTH] DB lookup: %.0f ms", (time.monotonic() - t0) * 1000)
+
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    # ── 2. Password verification ───────────────────────────────────────────
+    t1 = time.monotonic()
+    if not verify_password(form_data.password, user.hashed_password):
+        logger.info("[AUTH] password verify (fail): %.0f ms", (time.monotonic() - t1) * 1000)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    logger.info("[AUTH] password verify (ok): %.0f ms", (time.monotonic() - t1) * 1000)
+
+    # ── 3. Token generation ────────────────────────────────────────────────
     access_token = create_access_token(
-        subject=user.email, expires_delta=access_token_expires
+        subject=user.email,
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    logger.info("[AUTH] login total: %.0f ms", (time.monotonic() - t0) * 1000)
+
+    # Return token + user so the frontend needs only ONE request
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": _user_to_dict(user),
+    }
