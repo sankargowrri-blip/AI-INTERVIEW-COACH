@@ -54,6 +54,9 @@ export interface ResumeData {
 
 export interface ExtractedResumeInfo {
   name: string;
+  email?: string;
+  phone?: string;
+  summary?: string;
   education: string[];
   skills: string[];
   projects: string[];
