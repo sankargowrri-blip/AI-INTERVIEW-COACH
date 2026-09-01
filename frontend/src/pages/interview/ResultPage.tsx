@@ -271,7 +271,14 @@ export default function ResultPage() {
   // ── SUCCESS — safe destructuring with fallbacks ────────────────────────────
   const totalScore     = safeNum(result.totalScore, 0);
   const classification = result.classification || classifyScore(totalScore);
-  const readiness      = result.readinessPrediction || 'Medium';
+  const readiness      = result.readinessPrediction || 'Needs Improvement';
+  // @ts-ignore — extended fields
+  const interviewStatus      = (result as any).interviewStatus ?? 'COMPLETED';
+  // @ts-ignore
+  const answeredQuestions    = safeNum((result as any).answeredQuestions,   undefined);
+  // @ts-ignore
+  const unansweredQuestions  = safeNum((result as any).unansweredQuestions, undefined);
+  const isNotAttempted       = interviewStatus === 'NOT_ATTEMPTED';
 
   const sb = (result.scoreBreakdown       ?? {}) as Partial<typeof result.scoreBreakdown>;
   const answerQuality  = safeNum(sb?.answerQuality,  totalScore);
@@ -324,6 +331,18 @@ export default function ResultPage() {
       {/* ── Hero Score ───────────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-surface-200 p-6 sm:p-8 text-center">
         <p className="text-sm text-surface-500 mb-3">Interview Complete — Here's Your Result</p>
+
+        {/* NOT ATTEMPTED banner */}
+        {isNotAttempted && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-left">
+            <p className="text-sm font-semibold text-amber-800 mb-1">⚠ Interview Not Attempted</p>
+            <p className="text-xs text-amber-700">
+              No meaningful answers were provided during this interview. The score of 0/100 reflects that
+              the interview was not attempted — not the candidate's actual ability.
+            </p>
+          </div>
+        )}
+
         <div className="inline-flex flex-col items-center">
           <div className={clsx('text-7xl sm:text-8xl font-extrabold', scoreColor(totalScore))}>
             {totalScore}
@@ -332,7 +351,19 @@ export default function ResultPage() {
           <div className={clsx('mt-3 px-5 py-2 rounded-full border-2 text-base font-extrabold tracking-wide', classificationColor(classification))}>
             {classification}
           </div>
-          <div className="mt-4 flex items-center gap-2">
+
+          {/* Interview status badge */}
+          <div className="mt-3">
+            <span className={clsx('px-3 py-1 rounded-lg text-sm font-bold',
+              isNotAttempted
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-surface-100 text-surface-600'
+            )}>
+              {isNotAttempted ? 'Not Attempted' : 'Completed'}
+            </span>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
             <span className="text-sm text-surface-500">Interview Readiness:</span>
             <span className={clsx('px-3 py-1 rounded-lg text-sm font-bold',
               readiness === 'High'   ? 'bg-emerald-100 text-emerald-700' :
@@ -342,6 +373,18 @@ export default function ResultPage() {
               {readiness}
             </span>
           </div>
+
+          {/* Answered / unanswered counts */}
+          {answeredQuestions !== undefined && unansweredQuestions !== undefined && (
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <span className="text-emerald-600 font-medium">
+                ✓ Answered: {answeredQuestions}
+              </span>
+              <span className="text-red-500 font-medium">
+                ✗ Unanswered: {unansweredQuestions}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -526,29 +569,37 @@ export default function ResultPage() {
       {questionAnalysis.length > 0 && (
         <CollapsibleSection title="Question-by-Question Analysis" defaultOpen={false}>
           <div className="space-y-4">
-            {questionAnalysis.map((qa: any, i: number) => (
-              <div key={i} className="border border-surface-100 rounded-xl p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-semibold text-surface-900">
-                    Q{i + 1}: {String(qa?.question ?? '—')}
-                  </p>
-                  <span className={clsx('shrink-0 text-sm font-bold px-2 py-0.5 rounded-lg', scoreColor(safeNum(qa?.score, 50)))}>
-                    {safeNum(qa?.score, 50)}/100
-                  </span>
-                </div>
-                {qa?.answer && qa.answer !== '(no answer recorded)' && (
-                  <div className="bg-surface-50 rounded-lg p-3">
-                    <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide mb-1">Your Answer</p>
-                    <p className="text-xs text-surface-600 leading-relaxed">{String(qa.answer)}</p>
+            {questionAnalysis.map((qa: any, i: number) => {
+              const isAnswered = qa?.status !== 'not_answered' && qa?.answer !== 'No answer provided.';
+              const qScore = safeNum(qa?.score, 0);
+              return (
+                <div key={i} className="border border-surface-100 rounded-xl p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-surface-900">
+                      Q{i + 1}: {String(qa?.question ?? '—')}
+                    </p>
+                    <span className={clsx('shrink-0 text-sm font-bold px-2 py-0.5 rounded-lg',
+                      isAnswered ? scoreColor(qScore) : 'text-red-500 bg-red-50'
+                    )}>
+                      {isAnswered ? `${qScore}/100` : 'Not Answered'}
+                    </span>
                   </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs bg-surface-100 text-surface-600 px-2 py-0.5 rounded-full capitalize">
-                    {String(qa?.category ?? 'general').replace('-', ' ')}
-                  </span>
+                  <div className={clsx('rounded-lg p-3', isAnswered ? 'bg-surface-50' : 'bg-red-50')}>
+                    <p className="text-[10px] font-semibold text-surface-400 uppercase tracking-wide mb-1">
+                      {isAnswered ? 'Your Answer' : 'Status'}
+                    </p>
+                    <p className={clsx('text-xs leading-relaxed', isAnswered ? 'text-surface-600' : 'text-red-600 italic')}>
+                      {isAnswered ? String(qa.answer) : 'No answer provided for this question.'}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs bg-surface-100 text-surface-600 px-2 py-0.5 rounded-full capitalize">
+                      {String(qa?.category ?? 'general').replace('-', ' ')}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CollapsibleSection>
       )}

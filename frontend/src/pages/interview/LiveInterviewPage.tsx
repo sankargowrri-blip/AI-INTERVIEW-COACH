@@ -225,13 +225,21 @@ export default function LiveInterviewPage() {
     stopListening();
     cancelSpeech();
 
-    const answerText = transcript.trim() || '(no answer recorded)';
-    addAnswer({
-      questionId:   currentQuestion?.id       ?? String(currentIdx),
-      questionText: currentQuestion?.text     ?? '',
-      transcript:   answerText,
-      duration:     0,
-    });
+    // Only record the answer if the transcript is meaningful — never record silence
+    const answerText = transcript.trim();
+    const isMeaningful = answerText.length >= 3 &&
+      !['(no answer recorded)', '[silence]', '[no speech detected]']
+        .some(p => answerText.toLowerCase() === p.toLowerCase());
+
+    if (isMeaningful) {
+      addAnswer({
+        questionId:   currentQuestion?.id       ?? String(currentIdx),
+        questionText: currentQuestion?.text     ?? '',
+        transcript:   answerText,
+        duration:     0,
+      });
+    }
+    // If not meaningful: addAnswer is NOT called — question stays unanswered
 
     setLiveStatus('next');
     setTranscript('');
@@ -249,9 +257,22 @@ export default function LiveInterviewPage() {
     clearTimer();
     stopListening();
     cancelSpeech();
+    // Record final answer only if meaningful speech was captured
+    const finalText = transcript.trim();
+    const isMeaningful = finalText.length >= 3 &&
+      !['(no answer recorded)', '[silence]', '[no speech detected]']
+        .some(p => finalText.toLowerCase() === p.toLowerCase());
+    if (isMeaningful && currentQuestion) {
+      addAnswer({
+        questionId:   currentQuestion.id,
+        questionText: currentQuestion.text ?? '',
+        transcript:   finalText,
+        duration:     0,
+      });
+    }
     setInterviewStatus('completed');
     navigate('/interview/completion');
-  }, [clearTimer, stopListening, setInterviewStatus, navigate]);
+  }, [clearTimer, stopListening, transcript, currentQuestion, addAnswer, setInterviewStatus, navigate]);
 
   // ── load interview ─────────────────────────────────────────────────────────
   useEffect(() => {
