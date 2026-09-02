@@ -1,13 +1,10 @@
 /**
  * authService.ts
  *
- * Performance optimisation applied:
- *  - login() now makes ONE request instead of two.
- *    The backend /login endpoint returns the user alongside the token,
- *    so we no longer need a second GET /users/me round trip.
- *  - All API calls use a 15-second timeout so the UI never hangs forever.
- *  - User data is cached in localStorage and restored on page load,
- *    so AuthContext becomes synchronous (no async useEffect waterfall).
+ * Login makes ONE network request (backend returns token + user together).
+ * Timeout is 75 s — long enough for Render free-tier cold start (~60 s).
+ * One automatic retry on timeout / network error with a 3 s delay.
+ * Error messages are categorised so the UI can show the right hint.
  */
 
 import axios from 'axios';
@@ -16,13 +13,32 @@ import type { User, LoginCredentials, RegisterData } from '../types';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const API_URL  = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
 
-/** Request timeout — 15 s. Enough for a warm Render backend; surfaces cold-start clearly. */
-const TIMEOUT_MS = 15_000;
+/**
+ * Primary timeout for a single attempt.
+ * Render free cold-start takes up to ~60 s; we give 75 s before giving up.
+ */
+const TIMEOUT_MS  = 75_000;
+const RETRY_DELAY = 3_000;   // ms to wait before the automatic retry
 
 const AUTH_STORAGE_KEY = 'aic_auth_user';
 const TOKEN_KEY        = 'aic_auth_token';
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── Error categories ───────────────────────────────────────────────────────
+export type AuthErrorCode =
+  | 'INVALID_CREDENTIALS'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT'
+  | 'SERVER_ERROR'
+  | 'UNKNOWN';
+
+export interface AuthResponse {
+  success:    boolean;
+  user?:      User;
+  error?:     string;
+  errorCode?: AuthErrorCode;
+}
+
+// ── helpers ────────────────────────────────────────────────────────────────
 
 const mapUser = (data: any): User => ({
   id:              String(data.id),
@@ -37,44 +53,85 @@ function persistUser(user: User, token: string) {
   try {
     localStorage.setItem(TOKEN_KEY,        token);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-  } catch { /* storage full / private mode */ }
+  } catch { /* storage full or private mode — fail silently */ }
 }
 
-function errorMessage(error: any): string {
-  if (!error.response && !error.request) return error.message || 'An unexpected error occurred.';
+function sleep(ms: number) {
+  return new Promise<void>(r => setTimeout(r, ms));
+}
+
+/** Parse an axios error into a code + message pair. */
+function parseError(error: any): { code: AuthErrorCode; message: string } {
+  // No response at all — network layer problem
   if (!error.response) {
-    // Request made but no response — network error OR timeout
-    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-      return 'timeout';
+    const isTimeout =
+      error.code === 'ECONNABORTED' ||
+      error.code === 'ERR_NETWORK' ||
+      error.message?.toLowerCase().includes('timeout') ||
+      error.message?.toLowerCase().includes('network');
+
+    if (isTimeout) {
+      return {
+        code:    'TIMEOUT',
+        message: 'timeout', // sentinel — LoginPage replaces with friendly copy
+      };
     }
-    return 'Unable to connect to the server. The backend may be starting up — please wait a moment and try again.';
+    return {
+      code:    'NETWORK_ERROR',
+      message:
+        'Unable to reach the server. Please check your connection and try again.',
+    };
   }
+
+  // Server responded with an error
+  const status = error.response.status;
   const detail = error.response?.data?.detail;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail))    return detail[0]?.msg || 'Validation error.';
-  return `Error ${error.response.status}: ${error.response.statusText || 'Request failed.'}`;
+  const detailMsg =
+    typeof detail === 'string'
+      ? detail
+      : Array.isArray(detail)
+      ? detail[0]?.msg || 'Validation error.'
+      : null;
+
+  if (status === 401 || status === 403) {
+    return {
+      code:    'INVALID_CREDENTIALS',
+      message: 'Invalid email or password.',
+    };
+  }
+  if (status === 422) {
+    return {
+      code:    'INVALID_CREDENTIALS',
+      message: detailMsg || 'Please check your email and password.',
+    };
+  }
+  if (status >= 500) {
+    return {
+      code:    'SERVER_ERROR',
+      message:
+        detailMsg ||
+        'The server encountered an error. Please try again in a moment.',
+    };
+  }
+  return {
+    code:    'UNKNOWN',
+    message: detailMsg || `Request failed (HTTP ${status}).`,
+  };
 }
 
-// ── service ───────────────────────────────────────────────────────────────────
-
-export interface AuthResponse {
-  success: boolean;
-  user?:   User;
-  error?:  string;
+/** Make ONE login attempt. Returns the axios response or throws. */
+async function attemptLogin(params: URLSearchParams) {
+  return axios.post(`${API_URL}/auth/login`, params, {
+    headers:             { 'Content-Type': 'application/x-www-form-urlencoded' },
+    timeout:             TIMEOUT_MS,
+    timeoutErrorMessage: 'timeout',
+  });
 }
+
+// ── public service ─────────────────────────────────────────────────────────
 
 export const authService = {
 
-  /**
-   * Log in with email + password.
-   *
-   * Makes exactly ONE network request.
-   * The updated backend /login endpoint now returns both the token and the
-   * user object, so we never need a second GET /users/me.
-   *
-   * If the backend still returns only a token (old version), we fall back to
-   * a second GET /users/me call for backwards compatibility.
-   */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const params = new URLSearchParams();
     params.append('username', credentials.email);
@@ -83,46 +140,57 @@ export const authService = {
     console.log('[AUTH] login → POST', `${API_URL}/auth/login`);
     const t0 = Date.now();
 
-    try {
-      const response = await axios.post(`${API_URL}/auth/login`, params, {
-        headers:        { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout:        TIMEOUT_MS,
-        timeoutErrorMessage: 'timeout',
-      });
+    // ── Attempt 1 ───────────────────────────────────────────────────────
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        if (attempt === 2) {
+          console.log('[AUTH] retrying after', RETRY_DELAY, 'ms…');
+          await sleep(RETRY_DELAY);
+        }
 
-      const { access_token, user: rawUser } = response.data;
-      console.log(`[AUTH] login response: ${Date.now() - t0} ms`);
+        const response = await attemptLogin(params);
+        const { access_token, user: rawUser } = response.data;
+        console.log(`[AUTH] login OK in ${Date.now() - t0} ms (attempt ${attempt})`);
 
-      let user: User;
+        let user: User;
+        if (rawUser) {
+          user = mapUser(rawUser);
+        } else {
+          // Backwards compat: old backend returns token only
+          console.log('[AUTH] fallback GET /users/me');
+          const profileRes = await axios.get(`${API_URL}/users/me`, {
+            headers: { Authorization: `Bearer ${access_token}` },
+            timeout: 15_000,
+          });
+          user = mapUser(profileRes.data);
+        }
 
-      if (rawUser) {
-        // ── Fast path: backend returned user in login response ──────────────
-        user = mapUser(rawUser);
-        console.log('[AUTH] user from login response — no second request needed');
-      } else {
-        // ── Fallback: old backend — fetch profile separately ────────────────
-        console.log('[AUTH] fallback: GET /users/me');
-        const profileRes = await axios.get(`${API_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${access_token}` },
-          timeout: TIMEOUT_MS,
-        });
-        user = mapUser(profileRes.data);
-        console.log(`[AUTH] /users/me response: ${Date.now() - t0} ms total`);
+        persistUser(user, access_token);
+        return { success: true, user };
+
+      } catch (err: any) {
+        lastError = err;
+        const { code } = parseError(err);
+
+        // Don't retry on wrong credentials — it will fail again immediately
+        if (code === 'INVALID_CREDENTIALS') break;
+
+        // Don't retry if we already used both attempts
+        if (attempt === 2) break;
+
+        console.warn(`[AUTH] attempt ${attempt} failed (${code}), will retry`);
       }
-
-      persistUser(user, access_token);
-      return { success: true, user };
-
-    } catch (error: any) {
-      console.error('[AUTH] login error:', error?.response?.status, error?.message);
-      const msg = errorMessage(error);
-      return {
-        success: false,
-        error:   msg === 'timeout'
-          ? 'Login is taking longer than expected. The server may be starting up — please wait a moment and try again.'
-          : msg,
-      };
     }
+
+    // Both attempts exhausted
+    const { code, message } = parseError(lastError);
+    console.error('[AUTH] login failed after retries:', code, message);
+    return {
+      success:   false,
+      error:     message,
+      errorCode: code,
+    };
   },
 
   async register(data: RegisterData): Promise<AuthResponse> {
@@ -136,10 +204,15 @@ export const authService = {
       );
 
       const { user: rawUser, access_token } = response.data;
-      console.log(`[AUTH] register response: ${Date.now() - t0} ms`);
+      console.log(`[AUTH] register OK in ${Date.now() - t0} ms`);
 
       if (!rawUser || !access_token) {
-        return { success: false, error: 'Registration succeeded but the server returned incomplete data. Please log in.' };
+        return {
+          success: false,
+          error:
+            'Registration succeeded but the server returned incomplete data. Please log in.',
+          errorCode: 'SERVER_ERROR',
+        };
       }
 
       const user = mapUser(rawUser);
@@ -147,14 +220,9 @@ export const authService = {
       return { success: true, user };
 
     } catch (error: any) {
-      console.error('[AUTH] register error:', error?.response?.status, error?.message);
-      const msg = errorMessage(error);
-      return {
-        success: false,
-        error: msg === 'timeout'
-          ? 'Registration is taking longer than expected. Please try again.'
-          : msg,
-      };
+      const { code, message } = parseError(error);
+      console.error('[AUTH] register failed:', code, message);
+      return { success: false, error: message, errorCode: code };
     }
   },
 
@@ -165,10 +233,7 @@ export const authService = {
     } catch { /* ignore */ }
   },
 
-  /**
-   * Restore user from localStorage — synchronous, no network call.
-   * Called by AuthContext on mount to set initial state instantly.
-   */
+  /** Synchronous — reads from localStorage, no network call. */
   getCurrentUser(): User | null {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -189,7 +254,7 @@ export const authService = {
       const token    = this.getToken();
       const response = await axios.patch(`${API_URL}/users/me`, updates, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: TIMEOUT_MS,
+        timeout: 15_000,
       });
       const updated = mapUser(response.data);
       try { localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated)); } catch { /* ignore */ }

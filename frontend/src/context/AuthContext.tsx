@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { User, LoginCredentials, RegisterData } from '../types';
 import { authService } from '../services/authService';
+import type { AuthResponse } from '../services/authService';
 
 interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
+  login: (credentials: LoginCredentials) => Promise<AuthResponse>;
+  register: (data: RegisterData) => Promise<AuthResponse>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => Promise<void>;
 }

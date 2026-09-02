@@ -4,8 +4,17 @@ services:
     env: python
     plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    # buildCommand runs ONCE per deploy, not on every cold-start restart.
+    # Running alembic here instead of in startCommand means migrations only
+    # happen during deploys, not every time Render spins the instance back up
+    # after 15-min inactivity.  This removes 3–8 s from every cold-start.
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+
+    # startCommand is executed on every cold-start.
+    # Keeping it to pure uvicorn launch minimises spin-up latency.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+
     envVars:
       - key: DATABASE_URL
         fromDatabase:
