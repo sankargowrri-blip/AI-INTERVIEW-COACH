@@ -149,16 +149,46 @@ export default function LiveInterviewPage() {
   }, []);
 
   // ── camera ────────────────────────────────────────────────────────────────
+  // We request the stream during loading and store it in streamRef.
+  // A separate useEffect watches pageState: once it becomes 'ready' the
+  // <video> element is guaranteed to be in the DOM, so we assign then.
   const startCamera = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraOn(false);
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      console.log('[Camera] Requesting stream…');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+        audio: false,
+      });
+      console.log('[Camera] Stream received:', stream.getVideoTracks());
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      // Don't assign to videoRef here — element may not be mounted yet.
+      // The useEffect below handles assignment once pageState === 'ready'.
       setCameraOn(true);
-    } catch {
+    } catch (err) {
+      console.warn('[Camera] getUserMedia failed:', err);
       setCameraOn(false);
     }
   }, []);
+
+  // ── Assign stream to video element once the page is ready ────────────────
+  // This fires after pageState transitions to 'ready', which is after
+  // startSession() is called and React has rendered the camera panel.
+  useEffect(() => {
+    if (pageState !== 'ready' || !streamRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    console.log('[Camera] Assigning stream to video element…');
+    video.srcObject = streamRef.current;
+    video.play().then(() => {
+      console.log('[Camera] Video playback started.');
+    }).catch(err => {
+      console.error('[Camera] video.play() failed:', err);
+    });
+  }, [pageState]);
 
   // ── speech recognition ────────────────────────────────────────────────────
   const startListening = useCallback(() => {
@@ -548,7 +578,7 @@ export default function LiveInterviewPage() {
               autoPlay
               muted
               playsInline
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover [transform:scaleX(-1)]"
               aria-label="Your camera preview"
             />
             {/* Overlay when camera off */}
